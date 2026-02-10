@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Acceloka.Api.Domain/Acceloka.Api.Domain.csproj" Id="8efb6652-6a52-48f4-9d04-7f5e9feb85fb" />
+  <Project Path="Acceloka.Api.Infrastructure/Acceloka.Api.Infrastructure.csproj" Id="74fdd602-0223-4ee1-923d-a2593e677679" />
+  <Project Path="Acceloka.Api/Acceloka.Api.csproj" />
+</Solution>
