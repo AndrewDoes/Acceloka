@@ -1,7 +1,7 @@
-﻿using Acceloka.Api.Features.Tickets.Commands.BookTicket.Responses;
+﻿using Acceloka.Api.Features.Tickets.BookTicket.Responses;
 using MediatR;
 
-namespace Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests
+namespace Acceloka.Api.Features.Tickets.BookTicket.Requests
 {
     public class BookTicketCommand : IRequest<BookTicketResponse>
     {

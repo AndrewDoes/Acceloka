@@ -1,6 +1,8 @@
-using Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests;
+using Acceloka.Api.Common;
+using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Infrastructure.Persistence;
 using Acceloka.Api.Infrastructure.Persistence;
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,10 @@ builder.Services.AddDbContext<AccelokaDbContext>(options => options.UseSqlServer
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(BookTicketCommand).Assembly));
 
+//FluentValidation
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
 //RFC 7807 Standard
 builder.Services.AddProblemDetails();
 
@@ -41,13 +47,12 @@ app.UseExceptionHandler(exceptionHandlerApp =>
     {
         var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
 
-        // This ensures only the essential RFC 7807 info is sent to Postman
         var problemDetails = new
         {
             type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
             title = "Bad Request",
             status = StatusCodes.Status400BadRequest,
-            detail = exception?.Message, // This is your "Quota Habis" message
+            detail = exception?.Message,
             traceId = context.TraceIdentifier
         };
 

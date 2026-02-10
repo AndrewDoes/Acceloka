@@ -1,6 +1,7 @@
-﻿using MediatR;
+﻿using Acceloka.Api.Features.Tickets.GetAvailableTickets.Responses;
+using MediatR;
 
-namespace Acceloka.Api.Features.Tickets.Queries.GetAvailableTickets
+namespace Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests
 {
     public class GetAvailableTicketsQuery : IRequest<List<GetAvailableTicketsResponse>>
     {

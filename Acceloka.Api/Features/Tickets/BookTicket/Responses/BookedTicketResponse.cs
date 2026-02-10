@@ -1,4 +1,4 @@
-﻿namespace Acceloka.Api.Features.Tickets.Commands.BookTicket.Responses
+﻿namespace Acceloka.Api.Features.Tickets.BookTicket.Responses
 {
     public class BookedTicketResponse
     {

@@ -1,9 +1,10 @@
-﻿
+﻿using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
+using Acceloka.Api.Features.Tickets.GetAvailableTickets.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Acceloka.Api.Features.Tickets.Queries.GetAvailableTickets
+namespace Acceloka.Api.Features.Tickets.GetAvailableTickets
 {
     public class GetAvailableTicketsHandler : IRequestHandler<GetAvailableTicketsQuery, List<GetAvailableTicketsResponse>>
     {

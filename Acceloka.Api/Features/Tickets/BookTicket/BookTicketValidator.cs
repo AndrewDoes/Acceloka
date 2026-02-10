@@ -1,9 +1,9 @@
-﻿using Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests;
+﻿using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
-namespace Acceloka.Api.Features.Tickets.Commands.BookTicket
+namespace Acceloka.Api.Features.Tickets.BookTicket
 {
     public class BookTicketValidator : AbstractValidator<BookTicketCommand>
     {
@@ -14,13 +14,22 @@ namespace Acceloka.Api.Features.Tickets.Commands.BookTicket
             _db = db;
 
             RuleFor(x => x.Tickets)
-                .NotEmpty().WithMessage("At least one ticket must be booked.");
+                .NotEmpty().WithMessage("Harus memesan setidaknya satu tiket");
+
+            RuleFor(x => x.Tickets)
+            .Must(x => x.Select(t => t.TicketCode).Distinct().Count() == x.Count)
+            .WithMessage("Duplicate ticket codes are not allowed in a single booking.");
+
+            RuleForEach(x => x.Tickets).ChildRules(ticket => {
+                ticket.RuleFor(x => x.Quantity)
+                    .GreaterThan(0)
+                    .WithMessage($"Harus memesan 1 tiket atau lebih");
+            });
 
             RuleForEach(x => x.Tickets).CustomAsync(async (req, context, cancellationToken) =>
             {
                 var bookingDate = DateTime.UtcNow;
 
-                // 1. Check if Ticket exists [cite: 51]
                 var ticket = await _db.Tickets
                     .Include(t => t.BookedTicketDetails)
                     .FirstOrDefaultAsync(t => t.KodeTiket == req.TicketCode, cancellationToken);

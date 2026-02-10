@@ -1,6 +1,7 @@
-﻿using FluentValidation;
+﻿using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
+using FluentValidation;
 
-namespace Acceloka.Api.Features.Tickets.Queries.GetAvailableTickets
+namespace Acceloka.Api.Features.Tickets.GetAvailableTickets
 {
     public class GetAvailableTicketsValidator : AbstractValidator<GetAvailableTicketsQuery>
     {

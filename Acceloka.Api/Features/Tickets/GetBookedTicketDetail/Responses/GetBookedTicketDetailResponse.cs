@@ -1,4 +1,4 @@
-﻿namespace Acceloka.Api.Features.Tickets.Queries.GetBookedTicketDetail.Responses
+﻿namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Responses
 {
     public class GetBookedTicketDetailResponse
     {

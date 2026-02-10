@@ -1,4 +1,4 @@
-﻿namespace Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests
+﻿namespace Acceloka.Api.Features.Tickets.BookTicket.Requests
 {
     public class BookTicketRequestItem
     {

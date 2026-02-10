@@ -1,6 +1,8 @@
 ﻿using Acceloka.Api.Domain.Entities;
-using Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests;
-using Acceloka.Api.Features.Tickets.Commands.BookTicket.Responses;
+using Acceloka.Api.Features.Tickets.BookTicket.Requests;
+using Acceloka.Api.Features.Tickets.BookTicket.Responses;
+using Acceloka.Api.Features.Tickets.BookTicket.Responses;
+using Acceloka.Api.Features.Tickets.BookTicket.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +37,7 @@ public class BookTicketHandler
         if (tickets.Count != request.Tickets.Count)
         {
             var error = $"Kode tiket tidak terdaftar";
+            _logger.LogInformation(error);
             throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
         }
 

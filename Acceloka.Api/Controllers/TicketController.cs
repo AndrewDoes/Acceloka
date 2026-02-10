@@ -1,6 +1,6 @@
-﻿using Acceloka.Api.Features.Tickets.Commands.BookTicket.Requests;
-using Acceloka.Api.Features.Tickets.Queries.GetAvailableTickets;
-using Acceloka.Api.Features.Tickets.Queries.GetBookedTicketDetail;
+﻿using Acceloka.Api.Features.Tickets.BookTicket.Requests;
+using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
+using Acceloka.Api.Features.Tickets.GetBookedTicketDetail;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
