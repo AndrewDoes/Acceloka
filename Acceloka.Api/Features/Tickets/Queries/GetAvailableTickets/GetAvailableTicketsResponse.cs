@@ -2,10 +2,12 @@
 {
     public class GetAvailableTicketsResponse
     {
-        public int TicketId { get; set; }
+        public string EventDate {  get; set; }
+        public int Quota { get; set; }
+        public string TicketCode { get; set; }
         public string TicketName { get; set; }
-        public decimal Price { get; set; }
-        public int RemainingQuantity { get; set; }
         public string Category {  get; set; }
+        public decimal Price { get; set; }
+
     }
 }

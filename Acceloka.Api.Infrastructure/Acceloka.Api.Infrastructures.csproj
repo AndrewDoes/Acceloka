@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Acceloka.Api.Domain\Acceloka.Api.Domain.csproj" />
+    <ProjectReference Include="..\Acceloka.Api.Domain\Acceloka.Api.Domains.csproj" />
   </ItemGroup>
 
 </Project>

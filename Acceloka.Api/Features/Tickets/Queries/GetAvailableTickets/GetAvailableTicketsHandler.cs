@@ -18,24 +18,27 @@ namespace Acceloka.Api.Features.Tickets.Queries.GetAvailableTickets
             var skip = (request.page - 1) * request.pageSize;
 
             var tickets = await _dbContext.Tickets
-           .Include(t => t.Category)
-           .Include(t => t.BookedTicketDetails)
-           .Where(t =>
-               t.Quota >
-               t.BookedTicketDetails.Sum(d => d.Quantity))
-           .OrderBy(t => t.NamaTiket)
-           .Skip(skip)
-           .Take(request.pageSize)
-           .Select(t => new GetAvailableTicketsResponse
-           {
-               TicketId = t.Id,
-               TicketName = t.NamaTiket,
-               Price = t.Harga,
-               Category = t.Category.Name,
-               RemainingQuantity =
-                   t.Quota - t.BookedTicketDetails.Sum(d => d.Quantity)
-           })
-           .ToListAsync(cancellationToken);
+            .Include(t => t.Category)
+            .Include(t => t.BookedTicketDetails)
+            .Where(t =>
+                t.Quota >
+                (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0)
+            )
+            .OrderBy(t => t.NamaTiket)
+            .Skip(skip)
+            .Take(request.pageSize)
+            .Select(t => new GetAvailableTicketsResponse
+            {
+                EventDate = t.EventDate.ToString("dd/MM/yyyy HH:mm:ss"),
+                TicketCode = t.KodeTiket,
+                TicketName = t.NamaTiket,
+                Price = t.Harga,
+                Category = t.Category.Name,
+                Quota =
+                    t.Quota -
+                    (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0)
+            })
+            .ToListAsync(cancellationToken);
 
             return tickets;
         }
