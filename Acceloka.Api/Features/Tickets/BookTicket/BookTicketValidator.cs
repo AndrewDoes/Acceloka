@@ -8,22 +8,47 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
     public class BookTicketValidator : AbstractValidator<BookTicketCommand>
     {
         private readonly AccelokaDbContext _db;
+        private readonly ILogger<BookTicketValidator> _logger;
 
-        public BookTicketValidator(AccelokaDbContext db)
+        public BookTicketValidator(AccelokaDbContext db, ILogger<BookTicketValidator> logger)
         {
             _db = db;
+            _logger = logger;
 
-            RuleFor(x => x.Tickets)
-                .NotEmpty().WithMessage("Harus memesan setidaknya satu tiket");
+            RuleFor(x => x.Tickets).Custom((tickets, context) =>
+            {
+                if (tickets == null || !tickets.Any())
+                {
+                    var error = "Harus memesan setidaknya satu tiket";
+                    _logger.LogInformation(error); //
+                    context.AddFailure(error);
+                }
+            });
 
-            RuleFor(x => x.Tickets)
-            .Must(x => x.Select(t => t.TicketCode).Distinct().Count() == x.Count)
-            .WithMessage("Duplicate ticket codes are not allowed in a single booking.");
+            RuleFor(x => x.Tickets).Custom((tickets, context) =>
+            {
+                var duplicateCodes = tickets
+                    .GroupBy(t => t.TicketCode)
+                    .Where(g => g.Count() > 1)
+                    .Select(g => g.Key)
+                    .ToList();
 
-            RuleForEach(x => x.Tickets).ChildRules(ticket => {
-                ticket.RuleFor(x => x.Quantity)
-                    .GreaterThan(0)
-                    .WithMessage($"Harus memesan 1 tiket atau lebih");
+                if (duplicateCodes.Any())
+                {
+                    var error = $"Duplicate ticket codes detected: {string.Join(", ", duplicateCodes)}";
+                    _logger.LogInformation(error); 
+                    context.AddFailure("Tickets", "Duplicate ticket codes are not allowed in a single booking.");
+                }
+            });
+
+            RuleForEach(x => x.Tickets).Custom((ticket, context) =>
+            {
+                if (ticket.Quantity <= 0)
+                {
+                    var error = $"Invalid quantity ({ticket.Quantity}) for ticket {ticket.TicketCode}";
+                    _logger.LogInformation(error);
+                    context.AddFailure("Quantity", "Harus memesan 1 tiket atau lebih");
+                }
             });
 
             RuleForEach(x => x.Tickets).CustomAsync(async (req, context, cancellationToken) =>
@@ -36,7 +61,9 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
 
                 if (ticket == null)
                 {
-                    context.AddFailure("TicketCode", $"Kode tiket {req.TicketCode} tidak terdaftar");
+                    var error = $"Kode tiket {req.TicketCode} tidak terdaftar";
+                    _logger.LogInformation(error);
+                    context.AddFailure("TicketCode", error);
                     return;
                 }
 
@@ -45,16 +72,22 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
 
                 if (remainingQuota <= 0)
                 {
-                    context.AddFailure("TicketCode", $"Quota tiket {ticket.KodeTiket} habis");
+                    var error = $"Quota tiket {ticket.KodeTiket} habis";
+                    _logger.LogInformation(error);
+                    context.AddFailure("TicketCode", error);
                 }
                 else if (req.Quantity > remainingQuota)
                 {
-                    context.AddFailure("Quantity", $"Quantity melebihi sisa quota untuk {ticket.KodeTiket}");
+                    var error = $"Quantity melebihi sisa quota untuk {ticket.KodeTiket}";
+                    _logger.LogInformation(error);
+                    context.AddFailure("Quantity", error);
                 }
 
                 if (ticket.EventDate <= bookingDate)
                 {
-                    context.AddFailure("TicketCode", $"Tanggal event tiket {ticket.KodeTiket} tidak valid");
+                    var error = $"Tanggal event tiket {ticket.KodeTiket} tidak valid";
+                    _logger.LogInformation(error);
+                    context.AddFailure("TicketCode", error);
                 }
             });
         }

@@ -1,4 +1,5 @@
-﻿using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Responses;
+﻿using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
+using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -18,25 +19,12 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
 
         public async Task<List<GetBookedTicketDetailResponse>> Handle(GetBookedTicketDetailQuery request, CancellationToken cancellationToken)
         {
-            // 1️⃣ Validate existence
-            var exists = await _dbContext.BookedTickets
-                .AnyAsync(x => x.Id == request.BookedTicketId, cancellationToken);
-
-            if (!exists)
-            {
-                var error = $"BookedTicketId not found";
-                _logger.LogInformation(error);
-                throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
-            }
-
-            // 2️⃣ Load data
             var details = await _dbContext.BookedTicketDetails
                 .Where(d => d.BookedTicketId == request.BookedTicketId)
                 .Include(d => d.Ticket)
                     .ThenInclude(t => t.Category)
                 .ToListAsync(cancellationToken);
 
-            // 3️⃣ Group & map
             return details
                 .GroupBy(d => d.Ticket.Category.Name)
                 .Select(g => new GetBookedTicketDetailResponse

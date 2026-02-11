@@ -33,43 +33,6 @@ public class BookTicketHandler
              .Where(t => ticketCode.Contains(t.KodeTiket))
              .ToListAsync(cancellationToken);
 
-        // 2. Validation: Ticket code not found
-        if (tickets.Count != request.Tickets.Count)
-        {
-            var error = $"Kode tiket tidak terdaftar";
-            _logger.LogInformation(error);
-            throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
-        }
-
-        foreach (var req in request.Tickets)
-        {
-            var ticket = tickets.First(t => t.KodeTiket == req.TicketCode);
-
-            var bookedQty = ticket.BookedTicketDetails.Sum(x => x.Quantity);
-            var remainingQuota = ticket.Quota - bookedQty;
-
-            if (remainingQuota <= 0)
-            {
-                var error = $"Quota tiket {ticket.KodeTiket} habis";
-                _logger.LogInformation(error);
-                throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
-            }
-
-            if (req.Quantity > remainingQuota)
-            {
-                var error = $"Quota tiket {ticket.KodeTiket} di bawah permintaan";
-                _logger.LogInformation(error);
-                throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
-            }
-
-            if (ticket.EventDate <= bookingDate)
-            {
-                var error = $"Tanggal untuk tiket {ticket.KodeTiket} tidak valid";
-                _logger.LogInformation(error);
-                throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
-            }
-        }
-
         var bookedTicket = new BookedTicket
         {
             BookingDate = bookingDate,
@@ -83,8 +46,6 @@ public class BookTicketHandler
                 };
             }).ToList()
         };
-
-
 
         _db.BookedTickets.Add(bookedTicket);
         await _db.SaveChangesAsync(cancellationToken);
