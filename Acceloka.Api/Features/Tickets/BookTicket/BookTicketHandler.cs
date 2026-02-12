@@ -1,8 +1,6 @@
 ﻿using Acceloka.Api.Domain.Entities;
 using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Features.Tickets.BookTicket.Responses;
-using Acceloka.Api.Features.Tickets.BookTicket.Responses;
-using Acceloka.Api.Features.Tickets.BookTicket.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
