@@ -78,14 +78,14 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
                 }
                 else if (req.Quantity > remainingQuota)
                 {
-                    var error = $"Quantity melebihi sisa quota untuk {ticket.KodeTiket}";
+                    var error = $"Quantity ({req.Quantity}) melebihi sisa quota untuk {ticket.KodeTiket} (Sisa Quota = {remainingQuota})";
                     _logger.LogInformation(error);
                     context.AddFailure("Quantity", error);
                 }
 
                 if (ticket.EventDate <= bookingDate)
                 {
-                    var error = $"Tanggal event tiket {ticket.KodeTiket} tidak valid";
+                    var error = $"Tanggal event tiket {ticket.KodeTiket} sudah lewat atau tidak valid ({ticket.EventDate})";
                     _logger.LogInformation(error);
                     context.AddFailure("TicketCode", error);
                 }

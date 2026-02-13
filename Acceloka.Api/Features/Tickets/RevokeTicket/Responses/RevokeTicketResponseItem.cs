@@ -1,6 +1,6 @@
 ﻿namespace Acceloka.Api.Features.Tickets.RevokeTicket.Responses
 {
-    public class RevokeTicketResponse
+    public class RevokeTicketResponseItem
     {
         public string TicketCode { get; set; } = default!;
         public string TicketName { get; set; } = default!;
