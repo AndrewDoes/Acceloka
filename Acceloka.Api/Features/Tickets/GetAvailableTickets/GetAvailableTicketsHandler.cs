@@ -23,7 +23,7 @@ namespace Acceloka.Api.Features.Tickets.GetAvailableTickets
          .Include(t => t.BookedTicketDetails)
          .AsQueryable();
 
-            query.Where(t => t.Quota > (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0));
+            query = query.Where(t => t.Quota > (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0));
 
             //filtering
             query = HandleFilterRequest(request, query);
