@@ -11,11 +11,13 @@ public class BookTicketHandler
 {
     private readonly AccelokaDbContext _db;
     private readonly ILogger<BookTicketHandler> _logger;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public BookTicketHandler(AccelokaDbContext db, ILogger<BookTicketHandler> logger)
+    public BookTicketHandler(AccelokaDbContext db, ILogger<BookTicketHandler> logger, IHttpContextAccessor httpContextAccessor)
     {
         _db = db;
         _logger = logger;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<BookTicketResponse> Handle(BookTicketCommand request, CancellationToken cancellationToken)
@@ -24,6 +26,8 @@ public class BookTicketHandler
 
         //load ticket by ticket code
         var ticketCode = request.Tickets.Select(x => x.TicketCode).ToList();
+        var userIdClaim = _httpContextAccessor.HttpContext.User.FindFirst("InternalUserId")?.Value;
+        var internalUserId = int.Parse(userIdClaim);
 
         var tickets = await _db.Tickets
              .Include(t => t.Category)
@@ -34,6 +38,7 @@ public class BookTicketHandler
         var bookedTicket = new BookedTicket
         {
             BookingDate = bookingDate,
+            UserId = internalUserId,
             BookedTicketDetails = request.Tickets.Select(req =>
             {
                 var ticket = tickets.First(t => t.KodeTiket == req.TicketCode);

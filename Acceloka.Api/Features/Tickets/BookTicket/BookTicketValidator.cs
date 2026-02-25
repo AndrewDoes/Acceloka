@@ -9,11 +9,14 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
     {
         private readonly AccelokaDbContext _db;
         private readonly ILogger<BookTicketValidator> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public BookTicketValidator(AccelokaDbContext db, ILogger<BookTicketValidator> logger)
+        public BookTicketValidator(AccelokaDbContext db, ILogger<BookTicketValidator> logger, IHttpContextAccessor httpContextAccessor)
         {
             _db = db;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
+
 
             RuleFor(x => x.Tickets).Custom((tickets, context) =>
             {
@@ -88,6 +91,18 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
                     var error = $"Tanggal event tiket {ticket.KodeTiket} sudah lewat atau tidak valid ({ticket.EventDate})";
                     _logger.LogInformation(error);
                     context.AddFailure("TicketCode", error);
+                }
+            });
+
+            RuleFor(x => x).Custom((command, context) =>
+            {
+                var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirst("InternalUserId")?.Value;
+
+                if (string.IsNullOrEmpty(userIdClaim))
+                {
+                    var ErrorMessage = "User session is missing. Please log in again.";
+                    _logger.LogInformation(ErrorMessage);
+                    context.AddFailure("Auth", ErrorMessage);
                 }
             });
         }

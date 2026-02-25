@@ -4,6 +4,7 @@ using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
 using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
 using Acceloka.Api.Features.Tickets.RevokeTicket.Requests;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,6 +28,7 @@ namespace Acceloka.Api.Controllers
             return Ok(result);
         }
 
+        [Authorize]
         [HttpPost("book-ticket")]
         public async Task<IActionResult> BookTicket([FromBody] BookTicketCommand command)
         {

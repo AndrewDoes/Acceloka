@@ -1,4 +1,5 @@
 ﻿using Acceloka.Api.Domain.Entities;
+using Acceloka.Api.Domains.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Acceloka.Api.Infrastructure.Persistence
@@ -13,6 +14,15 @@ namespace Acceloka.Api.Infrastructure.Persistence
             // ❌ already seeded? then stop
             if (context.Categories.Any())
                 return;
+
+            // ===== NEW USER ======
+            var seedUser = new User
+            {
+                GoogleId = "seed-user-123",
+                Email = "seed@acceloka.local"
+            };
+            context.Users.Add(seedUser);
+            await context.SaveChangesAsync();
 
             // ===== CATEGORIES =====
             var concert = new Category { Name = "Concert" };
@@ -54,7 +64,8 @@ namespace Acceloka.Api.Infrastructure.Persistence
             // ===== BOOKED TICKET (Initial Seed Booking) =====
             var seedBooking = new BookedTicket
             {
-                BookingDate = DateTime.UtcNow
+                BookingDate = DateTime.UtcNow,
+                UserId = seedUser.Id // <--- Link the seed booking to the seed user
             };
 
             context.BookedTickets.Add(seedBooking);

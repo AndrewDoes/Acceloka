@@ -2,6 +2,7 @@
 using Acceloka.Api.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Acceloka.Api.Features.Tickets.Commands.EditBookedTicket
 {
@@ -9,45 +10,46 @@ namespace Acceloka.Api.Features.Tickets.Commands.EditBookedTicket
     {
         private readonly AccelokaDbContext _db;
         private readonly ILogger<EditBookedTicketValidator> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public EditBookedTicketValidator(AccelokaDbContext db, ILogger<EditBookedTicketValidator> logger)
+        public EditBookedTicketValidator(AccelokaDbContext db, ILogger<EditBookedTicketValidator> logger, IHttpContextAccessor httpContextAccessor)
         {
             _db = db;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
 
-            RuleFor(x => x.BookedTicketId).CustomAsync(async (id, context, ct) => {
+            RuleFor(x => x.BookedTicketId).CustomAsync(async (id, context, ct) =>
+            {
                 var exists = await _db.BookedTickets.AnyAsync(x => x.Id == id, ct);
                 if (!exists)
                 {
-                    var error = $"Booked tiketId tidak terdaftar";
-                    _logger.LogInformation(error);
-                    context.AddFailure("BookedTicketId", error);
+                    context.AddFailure("BookedTicketId", "Booked tiketId tidak terdaftar");
                 }
             });
 
-            RuleForEach(x => x.Tickets).Custom((ticket, context) =>
+            RuleForEach(x => x.Tickets).CustomAsync(async (req, context, ct) =>
             {
-                if (ticket.Quantity < 1)
-                {
-                    var error = $"Edit quantity failed: Ticket {ticket.TicketCode} requested quantity is {ticket.Quantity}, but minimal is 1.";
-                    _logger.LogInformation(error);
-                    context.AddFailure("Quantity", "Quantity minimal 1.");
-                }
-            });
+                var userIdClaim = _httpContextAccessor.HttpContext?.User.FindFirstValue("InternalUserId");
+                if (string.IsNullOrEmpty(userIdClaim)) return;
+                var userId = int.Parse(userIdClaim);
 
-            RuleForEach(x => x.Tickets).CustomAsync(async (req, context, ct) => {
                 var cmd = context.InstanceToValidate;
+
+                if (req.Quantity < 1)
+                {
+                    context.AddFailure("Quantity", "Quantity minimal 1.");
+                    return;
+                }
 
                 var detail = await _db.BookedTicketDetails
                     .Include(d => d.Ticket)
                     .FirstOrDefaultAsync(d => d.BookedTicketId == cmd.BookedTicketId &&
-                                             d.Ticket.KodeTiket == req.TicketCode, ct);
+                                              d.Ticket.KodeTiket == req.TicketCode &&
+                                              d.BookedTicket.UserId == userId, ct);
 
                 if (detail == null)
                 {
-                    var error = $"Kode tiket {req.TicketCode} tidak terdaftar pada Bookedtiket {cmd.BookedTicketId}";
-                    _logger.LogInformation(error);
-                    context.AddFailure("TicketCode", error);
+                    context.AddFailure("TicketCode", $"Kode tiket {req.TicketCode} tidak terdaftar pada Bookedtiket {cmd.BookedTicketId}");
                     return;
                 }
 
@@ -59,9 +61,7 @@ namespace Acceloka.Api.Features.Tickets.Commands.EditBookedTicket
 
                 if (req.Quantity > remainingQuota)
                 {
-                    var error = $"Quantity {req.Quantity} melebihi total sisa quota ({remainingQuota})";
-                    _logger.LogInformation(error);
-                    context.AddFailure("Quantity", error);
+                    context.AddFailure("Quantity", $"Quantity {req.Quantity} melebihi total sisa quota ({remainingQuota})");
                 }
             });
         }

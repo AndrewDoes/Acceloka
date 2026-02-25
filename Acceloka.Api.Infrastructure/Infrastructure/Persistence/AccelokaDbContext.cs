@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Acceloka.Api.Domain.Entities;
+﻿using Acceloka.Api.Domain.Entities;
+using Acceloka.Api.Domains.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Acceloka.Api.Infrastructure.Persistence
 {
@@ -15,6 +16,8 @@ namespace Acceloka.Api.Infrastructure.Persistence
         public DbSet<Ticket> Tickets => Set<Ticket>();
 
         public DbSet<BookedTicket> BookedTickets => Set<BookedTicket>();
+
+        public DbSet<User> Users => Set<User>();
 
         public DbSet<BookedTicketDetail> BookedTicketDetails
             => Set<BookedTicketDetail>();

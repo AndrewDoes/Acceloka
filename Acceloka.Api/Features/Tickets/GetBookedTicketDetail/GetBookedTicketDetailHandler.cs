@@ -1,8 +1,10 @@
-﻿using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
+﻿using Acceloka.Api.Domains.Entities;
+using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
 using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
 {
@@ -10,17 +12,23 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
     {
         private readonly AccelokaDbContext _dbContext;
         private readonly ILogger<GetBookedTicketDetailHandler> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public GetBookedTicketDetailHandler(AccelokaDbContext dbContext, ILogger<GetBookedTicketDetailHandler> logger)
+        public GetBookedTicketDetailHandler(AccelokaDbContext dbContext, ILogger<GetBookedTicketDetailHandler> logger, IHttpContextAccessor httpContextAccessor)
         {
             this._dbContext = dbContext;
             _logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<List<GetBookedTicketDetailResponse>> Handle(GetBookedTicketDetailQuery request, CancellationToken cancellationToken)
         {
+            var userIdClaim = _httpContextAccessor.HttpContext!.User.FindFirstValue("InternalUserId");
+            var userId = int.Parse(userIdClaim!);
+
+
             var details = await _dbContext.BookedTicketDetails
-                .Where(d => d.BookedTicketId == request.BookedTicketId)
+                .Where(d => d.BookedTicketId == request.BookedTicketId && d.BookedTicket.UserId == userId)
                 .Include(d => d.Ticket)
                     .ThenInclude(t => t.Category)
                 .ToListAsync(cancellationToken);

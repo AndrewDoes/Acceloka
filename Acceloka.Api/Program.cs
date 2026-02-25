@@ -1,12 +1,15 @@
 using Acceloka.Api.Common;
+using Acceloka.Api.Domains.Entities;
 using Acceloka.Api.Features.Tickets.BookTicket.Requests;
-using Acceloka.Api.Infrastructure.Persistence;
 using Acceloka.Api.Infrastructure.Persistence;
 using FluentValidation;
 using MediatR;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args); 
 
@@ -38,6 +41,48 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 
 //RFC 7807 Standard
 builder.Services.AddProblemDetails();
+
+//CORS
+builder.Services.AddCors(options => {
+    options.AddDefaultPolicy(policy => {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+.AddCookie()
+.AddGoogle(options =>
+{
+    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
+    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
+
+    options.Events.OnTicketReceived = async context =>
+    {
+        var db = context.HttpContext.RequestServices.GetRequiredService<AccelokaDbContext>();
+        var googleId = context.Principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = context.Principal.FindFirstValue(ClaimTypes.Email);
+
+        var user = await db.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId);
+
+        if (user == null)
+        {
+            user = new User { GoogleId = googleId, Email = email };
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+        }
+
+        var claims = new List<Claim> { new Claim("InternalUserId", user.Id.ToString()) };
+        context.Principal?.AddIdentity(new ClaimsIdentity(claims));
+    };
+});
+
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
@@ -80,6 +125,9 @@ app.UseSerilogRequestLogging(options =>
         }
     };
 });
+
+app.UseAuthentication(); // Processes the login
+app.UseAuthorization();
 
 
 // Configure the HTTP request pipeline.

@@ -1,33 +1,38 @@
-﻿using Acceloka.Api.Features.Tickets.RevokeTicket.Requests;
+﻿using Acceloka.Api.Domains.Entities;
+using Acceloka.Api.Features.Tickets.RevokeTicket.Requests;
 using Acceloka.Api.Features.Tickets.RevokeTicket.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace Acceloka.Api.Features.Tickets.RevokeTicket
 {
-    // Fix: Return RevokeTicketListResponse, not List<RevokeTicketListResponse>
     public class RevokeTicketHandler : IRequestHandler<RevokeTicketCommand, RevokeTicketListResponse>
     {
         private readonly AccelokaDbContext _db;
         private readonly ILogger<RevokeTicketHandler> _logger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public RevokeTicketHandler(AccelokaDbContext db, ILogger<RevokeTicketHandler> logger)
+        public RevokeTicketHandler(AccelokaDbContext db, ILogger<RevokeTicketHandler> logger, IHttpContextAccessor httpContextAccessor)
         {
             this._db = db;
             this._logger = logger;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<RevokeTicketListResponse> Handle(RevokeTicketCommand request, CancellationToken cancellationToken)
         {
-            var detail = await _db.BookedTicketDetails
-                .Include(d => d.Ticket)
-                .FirstOrDefaultAsync(d => d.BookedTicketId == request.BookedTicketId && d.Ticket.KodeTiket == request.TicketCode, cancellationToken);
+            var userIdClaim = _httpContextAccessor.HttpContext!.User.FindFirstValue("InternalUserId");
+            var userId = int.Parse(userIdClaim!);
 
-            if (detail == null)
-            {
-                throw new KeyNotFoundException($"Ticket with code {request.TicketCode} was not found in booking {request.BookedTicketId}.");
-            }
+            var detail = await _db.BookedTicketDetails
+                .Include(d => d.BookedTicket)
+                .Include(d => d.Ticket)
+                    .ThenInclude(t => t.Category)
+                .FirstAsync(d => d.BookedTicketId == request.BookedTicketId
+                                 && d.Ticket.KodeTiket == request.TicketCode
+                                 && d.BookedTicket.UserId == userId, cancellationToken);
 
             if (detail.Quantity <= request.Quantity)
             {
@@ -38,35 +43,8 @@ namespace Acceloka.Api.Features.Tickets.RevokeTicket
                 detail.Quantity -= request.Quantity;
             }
 
-            var remainingDetailsCount = await _db.BookedTicketDetails
-                .CountAsync(d => d.BookedTicketId == request.BookedTicketId && d.Id != detail.Id, cancellationToken);
-
-            bool isBookingFullyDeleted = false;
-
-            if (detail.Quantity <= request.Quantity && remainingDetailsCount == 0)
-            {
-                var parentHeader = await _db.BookedTickets
-                    .FirstOrDefaultAsync(b => b.Id == request.BookedTicketId, cancellationToken);
-
-                if (parentHeader != null)
-                {
-                    _db.BookedTickets.Remove(parentHeader);
-                    isBookingFullyDeleted = true;
-                }
-            }
-
             await _db.SaveChangesAsync(cancellationToken);
 
-            if (isBookingFullyDeleted)
-            {
-                return new RevokeTicketListResponse
-                {
-                    Message = $"The entire booking {request.BookedTicketId} has been fully revoked and removed.",
-                    RemainingTickets = new List<RevokeTicketResponseItem>()
-                };
-            }
-
-            // Fix: Project to RevokeTicketResponseItem, not RevokeTicketListResponse
             var remainingTickets = await _db.BookedTicketDetails
                 .Where(d => d.BookedTicketId == request.BookedTicketId)
                 .Select(d => new RevokeTicketResponseItem
@@ -76,6 +54,18 @@ namespace Acceloka.Api.Features.Tickets.RevokeTicket
                     CategoryName = d.Ticket.Category.Name,
                     Quantity = d.Quantity
                 }).ToListAsync(cancellationToken);
+
+            if (!remainingTickets.Any())
+            {
+                _db.BookedTickets.Remove(detail.BookedTicket);
+                await _db.SaveChangesAsync(cancellationToken);
+
+                return new RevokeTicketListResponse
+                {
+                    Message = $"The entire booking {request.BookedTicketId} has been fully revoked and removed.",
+                    RemainingTickets = new List<RevokeTicketResponseItem>()
+                };
+            }
 
             return new RevokeTicketListResponse
             {
