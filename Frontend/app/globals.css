@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --acceloka-blue: #1677ff;
+    --acceloka-accent: #fa8c16;
+    --acceloka-bg: #f8fafc;
+    --acceloka-surface: #ffffff;
+    --acceloka-text: #0f172a;
+    --acceloka-muted: #64748b;
+    --acceloka-border: #e2e8f0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --acceloka-blue: #3b82f6;
+      --acceloka-accent: #f97316;
+      --acceloka-bg: #0f172a;
+      --acceloka-surface: #1e293b;
+      --acceloka-text: #f8fafc;
+      --acceloka-muted: #94a3b8;
+      --acceloka-border: #334155;
+    }
+  }
+
+
+  @theme {
+    --color-acceloka-blue: var(--acceloka-blue);
+    --color-acceloka-accent: var(--acceloka-accent);
+    --color-acceloka-bg: var(--acceloka-bg);
+    --color-acceloka-surface: var(--acceloka-surface);
+    --color-acceloka-text: var(--acceloka-text);
+    --color-acceloka-muted: var(--acceloka-muted);
+    --color-acceloka-border: var(--acceloka-border);
+  }
+
+  body {
+    background-color: var(--acceloka-bg);
+    color: var(--acceloka-text);
+    margin: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
