@@ -19,8 +19,8 @@ export interface TicketFilters {
     ticketCode: string;
     ticketName: string;
     maxPrice: string | number;
-    minEventDate: string;
-    maxEventDate: string;
+    startEventDate: string;
+    endEventDate: string;
     orderBy: string;
     orderState: string;
 }

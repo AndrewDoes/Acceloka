@@ -30,6 +30,11 @@ builder.Services.AddOpenApi();
 
 //dbContext
 builder.Services.AddDbContext<AccelokaDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+string[] allowedOrigins = {
+    "http://localhost:3000",
+    "http://192.168.56.1:3000" // Add this!
+};
+
 
 //mediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
@@ -45,7 +50,7 @@ builder.Services.AddProblemDetails();
 //CORS
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -80,10 +85,17 @@ builder.Services.AddAuthentication(options =>
 
         var claims = new List<Claim> { new Claim("InternalUserId", user.Id.ToString()) };
         context.Principal?.AddIdentity(new ClaimsIdentity(claims));
+
+
     };
 });
 
 builder.Services.AddHttpContextAccessor();
+
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(5225); // Port for the backend
+});
 
 var app = builder.Build();
 
@@ -125,7 +137,9 @@ app.UseSerilogRequestLogging(options =>
             diagnosticContext.Set("Exception", exception.Message);
         }
     };
-});
+}); 
+
+app.UseRouting();
 app.UseCors();
 
 app.UseAuthentication(); // Processes the login
@@ -137,8 +151,6 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-app.UseAuthorization();
 
 app.MapControllers();
 

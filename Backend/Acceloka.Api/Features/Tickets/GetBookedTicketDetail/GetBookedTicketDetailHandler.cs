@@ -1,4 +1,6 @@
-﻿using Acceloka.Api.Domains.Entities;
+﻿using Acceloka.Api.Domain.Entities;
+using Acceloka.Api.Domains.Entities;
+using Acceloka.Api.Features.Tickets.BookTicket.Responses;
 using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
 using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Responses;
 using Acceloka.Api.Infrastructure.Persistence;
@@ -10,13 +12,13 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
 {
     public class GetBookedTicketDetailHandler : IRequestHandler<GetBookedTicketDetailQuery, List<GetBookedTicketDetailResponse>>
     {
-        private readonly AccelokaDbContext _dbContext;
+        private readonly AccelokaDbContext _db;
         private readonly ILogger<GetBookedTicketDetailHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public GetBookedTicketDetailHandler(AccelokaDbContext dbContext, ILogger<GetBookedTicketDetailHandler> logger, IHttpContextAccessor httpContextAccessor)
+        public GetBookedTicketDetailHandler(AccelokaDbContext db, ILogger<GetBookedTicketDetailHandler> logger, IHttpContextAccessor httpContextAccessor)
         {
-            this._dbContext = dbContext;
+            this._db = db;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -26,13 +28,15 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
             var userIdClaim = _httpContextAccessor.HttpContext!.User.FindFirstValue("InternalUserId");
             var userId = int.Parse(userIdClaim!);
 
+            var bookingDate = DateTime.UtcNow;
 
-            var details = await _dbContext.BookedTicketDetails
-                .Where(d => d.BookedTicketId == request.BookedTicketId && d.BookedTicket.UserId == userId)
+            var details = await _db.BookedTicketDetails
                 .Include(d => d.Ticket)
                     .ThenInclude(t => t.Category)
+                .Where(d => d.BookedTicketId == request.BookedTicketId && d.BookedTicket.UserId == userId)
                 .ToListAsync(cancellationToken);
 
+            // 3. Group the retrieved records by Category Name as per the response DTO
             return details
                 .GroupBy(d => d.Ticket.Category.Name)
                 .Select(g => new GetBookedTicketDetailResponse
@@ -43,7 +47,8 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
                     {
                         TicketCode = x.Ticket.KodeTiket,
                         TicketName = x.Ticket.NamaTiket,
-                        EventDate = x.Ticket.EventDate.ToString("dd/MM/yyyy hh:mm:ss")
+                        Quantity = x.Quantity,
+                        EventDate = x.Ticket.EventDate.ToString("dd/MM/yyyy HH:mm:ss")
                     }).ToList()
                 })
                 .ToList();

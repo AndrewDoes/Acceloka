@@ -1,48 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MenuOutlined, CloseOutlined, UserOutlined } from "@ant-design/icons";
+import { MenuOutlined, CloseOutlined, UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import { useAuth } from "../context/AuthContext";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
-    const pathname = "/";
+    const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Auth State
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [userName, setUserName] = useState("");
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-    // Fetch Auth Status on Load
-    useEffect(() => {
-        const checkAuthStatus = async () => {
-            try {
-                // Call the actual ASP.NET Core backend endpoint
-                const response = await fetch("http://localhost:5225/api/v1/auth/status", {
-                    method: "GET",
-                    credentials: "include"
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.isAuthenticated) {
-                        setIsLoggedIn(true);
-                        // Extract the real name from Google Auth, fallback to email prefix if not available
-                        setUserName(data.name || data.email?.split('@')[0] || "User");
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to check auth status:", error);
-            } finally {
-                setIsCheckingAuth(false);
-            }
-        };
-
-        checkAuthStatus();
-    }, []);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+    const { isLoggedIn, userName, logout, isCheckingAuth } = useAuth();
 
     const navLinks = [
         { name: "Explore Tickets", href: "/" },
-        { name: "My Bookings", href: "/booked-tickets" },
+        { name: "My Bookings", href: "/my-bookings" },
     ];
 
     return (
@@ -61,18 +34,18 @@ export default function Navbar() {
                 </div>
 
                 {/* desktop & tablets-landscape */}
-                <div className="hidden justify-between items-center w-full lg:flex max-w-7xl mx-auto">
+                <div className="hidden justify-between items-center w-screen lg:flex px-20 mx-auto">
                     <a href="/" className="logo text-2xl xl:text-3xl text-acceloka-blue font-extrabold tracking-tight">Acceloka</a>
 
-                    <div className="flex items-center gap-8 xl:gap-12">
-                        <ul className="nav-list-lg flex gap-6 lg:gap-8 xl:gap-12 text-sm xl:text-base font-semibold tracking-wide text-center items-center">
+                    <div className="flex items-center gap-12 xl:gap-24">
+                        <ul className="nav-list-lg flex gap-6 lg:gap-12 xl:gap-24 text-sm xl:text-base font-semibold tracking-wide text-center items-center">
                             {navLinks.map((link) => (
                                 <li key={link.href} className="links">
                                     <a
                                         href={link.href}
                                         className={`transition-colors duration-200 pb-1 ${pathname === link.href
-                                                ? "text-acceloka-text border-b-[3px] border-acceloka-text"
-                                                : "text-acceloka-muted hover:text-acceloka-text"
+                                            ? "text-acceloka-text border-b-[3px] border-acceloka-text"
+                                            : "text-acceloka-muted hover:text-acceloka-text"
                                             }`}
                                     >
                                         {link.name}
@@ -81,15 +54,30 @@ export default function Navbar() {
                             ))}
                         </ul>
 
-                        {/* Avoid hydration mismatch by waiting for auth check */}
                         {!isCheckingAuth && (
                             isLoggedIn ? (
-                                <button className="flex items-center gap-2.5 bg-acceloka-blue text-white pl-1.5 pr-4 py-1.5 rounded-full text-sm font-semibold hover:bg-blue-600 transition shadow-sm">
-                                    <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center">
-                                        <UserOutlined className="text-acceloka-blue text-sm" />
-                                    </div>
-                                    {userName}
-                                </button>
+                                <div className="relative">
+                                    <button className="flex items-center gap-2.5 bg-acceloka-blue text-white pl-1.5 pr-4 py-1.5 rounded-full max-w-50 overflow-x-hidden text-sm font-semibold hover:bg-blue-600 transition shadow-sm"
+                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}>
+                                        <div className="bg-white rounded-full w-7 h-7 flex items-center justify-center">
+                                            <UserOutlined className="text-acceloka-blue text-sm" />
+                                        </div>
+                                        <span className="truncate max-w-32">{userName}</span>
+                                    </button>
+
+                                    {isProfileDropdownOpen && (
+                                        <div className="absolute right-0 mt-4 w-48 bg-acceloka-surface border border-acceloka-border rounded-xl shadow-lg py-2 animate-in fade-in slide-in-from-top
+                                                        hover:border-acceloka-accent hover:bg-acceloka-bg/80 transition-colors
+                                        ">
+                                            <button
+                                                onClick={logout}
+                                                className="w-full text-left px-5 py-2.5 text-sm text-acceloka-accent hover:bg-acceloka-bg/80 font-bold flex items-center gap-3 transition-colors">
+                                                <LogoutOutlined />
+                                                Log out
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
                                 <div className="flex items-center gap-4 border-l border-acceloka-border pl-8">
                                     <a href="/login" className="text-acceloka-text font-bold text-sm hover:text-acceloka-blue transition-colors">
@@ -115,8 +103,8 @@ export default function Navbar() {
                                 href={link.href}
                                 onClick={() => setIsMobileMenuOpen(false)}
                                 className={`block w-full px-6 py-4 transition-colors ${pathname === link.href
-                                        ? "text-acceloka-blue bg-blue-50"
-                                        : "text-acceloka-muted hover:bg-slate-50"
+                                    ? "text-acceloka-blue bg-blue-50"
+                                    : "text-acceloka-muted hover:bg-slate-50"
                                     }`}
                             >
                                 {link.name}
@@ -126,14 +114,25 @@ export default function Navbar() {
 
                     {!isCheckingAuth && (
                         isLoggedIn ? (
-                            <li className="w-full border-t border-acceloka-border mt-1 pt-1">
-                                <a href="/profile" className="flex items-center gap-3 w-full px-6 py-4 text-acceloka-text hover:bg-slate-50 transition-colors">
-                                    <div className="bg-acceloka-blue rounded-full w-8 h-8 flex items-center justify-center text-white">
-                                        <UserOutlined />
-                                    </div>
-                                    {userName}
-                                </a>
-                            </li>
+                            <div className="relative">
+                                <li className="w-full border-t border-acceloka-border mt-1 pt-1">
+                                    <a href="/profile" className="flex items-center gap-3 w-full px-6 py-4 text-acceloka-text hover:bg-slate-50 transition-colors">
+                                        <div className="bg-acceloka-blue rounded-full w-8 h-8 flex items-center justify-center text-white">
+                                            <UserOutlined />
+                                        </div>
+                                        {userName}
+                                    </a>
+                                </li>
+                                <li className="w-full border-t border-acceloka-border mt-1 py-4 px-6">
+                                    <button
+                                        onClick={logout}
+                                        className="flex items-center text-acceloka-accent bg-acceloka-bg gap-4 hover:bg-acceloka-bg transition-colors text-left font-bold">
+                                        <LogoutOutlined />
+                                        Log Out
+                                    </button>
+                                </li>
+                            </div>
+
                         ) : (
                             <li className="w-full border-t border-acceloka-border mt-1 p-4 flex flex-col gap-3">
                                 <a href="/login" className="w-full text-center border border-acceloka-blue text-acceloka-blue font-bold py-2.5 rounded-lg hover:bg-blue-50 transition-colors">
@@ -144,6 +143,6 @@ export default function Navbar() {
                     )}
                 </ul>
             </div>
-        </div>
+        </div >
     );
 }

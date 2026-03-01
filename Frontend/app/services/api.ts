@@ -5,6 +5,7 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
 
     const response = await fetch(url, {
         ...options,
+        credentials: "include",
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/problem+json',
@@ -27,7 +28,12 @@ export const bookingService = {
     // GET Available Tickets with searching and pagination
     getAvailableTickets: (params: Record<string, any>) => {
         const query = new URLSearchParams(params).toString();
-        return apiRequest<any>(`api/v1/get-available-ticket?${query}`);
+        return apiRequest<any>(`api/v1/get-available-tickets?${query}`);
+    },
+
+    //GET All Booked Tickets for User
+    getAllBookings: () => {
+        return apiRequest<any>('api/v1/get-all-bookings');
     },
 
     // POST Book Tickets
@@ -57,4 +63,20 @@ export const bookingService = {
             body: JSON.stringify(data),
         });
     }
-};
+}
+
+export const authService = {
+    checkAuthStatus: () => {
+        return apiRequest<any>('api/v1/auth/status', {
+            method: 'GET',
+            credentials: 'include'
+        });
+    },
+
+    logout: () => {
+        return apiRequest<any>('api/v1/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+    }
+}

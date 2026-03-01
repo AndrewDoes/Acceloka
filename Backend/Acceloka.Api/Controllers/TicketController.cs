@@ -1,5 +1,6 @@
 ﻿using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Features.Tickets.EditBookedTicket.Requests;
+using Acceloka.Api.Features.Tickets.GetAllBookings.Requests;
 using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
 using Acceloka.Api.Features.Tickets.GetBookedTicketDetail.Requests;
 using Acceloka.Api.Features.Tickets.RevokeTicket.Requests;
@@ -30,9 +31,20 @@ namespace Acceloka.Api.Controllers
 
         [Authorize]
         [HttpPost("book-ticket")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> BookTicket([FromBody] BookTicketCommand command)
         {
             var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("get-all-bookings")]
+        public async Task<IActionResult> GetAllBookings()
+        {
+            var result = await _mediator.Send(new GetAllBookingsQuery());
             return Ok(result);
         }
 

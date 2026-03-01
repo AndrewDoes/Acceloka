@@ -6,31 +6,31 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Acceloka.Api.Features.Tickets.GetAvailableTickets
 {
-    public class GetAvailableTicketsHandler : IRequestHandler<GetAvailableTicketsQuery, List<GetAvailableTicketsResponse>>
+    public class GetAvailableTicketsHandler : IRequestHandler<GetAvailableTicketsQuery, GetAvailableTicketsHeaderResponses>
     {
         private readonly AccelokaDbContext _dbContext;
         public GetAvailableTicketsHandler(AccelokaDbContext dbContext)
         {
             this._dbContext = dbContext;
         }
-        public async Task<List<GetAvailableTicketsResponse>> Handle(GetAvailableTicketsQuery request, CancellationToken cancellationToken)
-        {
-            //checkig on pages
-            var skip = (request.page - 1) * request.pageSize;
 
+        public async Task<GetAvailableTicketsHeaderResponses> Handle(GetAvailableTicketsQuery request, CancellationToken cancellationToken)
+        {
             var query = _dbContext.Tickets
-         .Include(t => t.Category)
-         .Include(t => t.BookedTicketDetails)
-         .AsQueryable();
+                .Include(t => t.Category)
+                .Include(t => t.BookedTicketDetails)
+                .AsQueryable();
 
             query = query.Where(t => t.Quota > (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0));
 
-            //filtering
             query = HandleFilterRequest(request, query);
-            //sorting
+
             query = HandleSortRequest(request, query);
 
-            return await query
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var skip = (request.page - 1) * request.pageSize;
+            var items = await query
                 .Skip(skip)
                 .Take(request.pageSize)
                 .Select(t => new GetAvailableTicketsResponse
@@ -43,6 +43,13 @@ namespace Acceloka.Api.Features.Tickets.GetAvailableTickets
                     Quota = t.Quota - (t.BookedTicketDetails.Sum(d => (int?)d.Quantity) ?? 0)
                 })
                 .ToListAsync(cancellationToken);
+
+
+            return new GetAvailableTicketsHeaderResponses
+            {
+                totalTickets = totalCount,
+                tickets = items
+            };
         }
 
         private static IQueryable<Domain.Entities.Ticket> HandleSortRequest(GetAvailableTicketsQuery request, IQueryable<Domain.Entities.Ticket> query)

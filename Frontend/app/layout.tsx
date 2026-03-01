@@ -1,14 +1,17 @@
+import Footer from "./components/footer";
 import Navbar from "./components/navbar";
+import { AuthProvider } from "./context/AuthContext";
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main style={{ padding: "2rem" }}>
+        <AuthProvider>
+          <Navbar />
           {children}
-        </main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

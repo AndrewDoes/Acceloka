@@ -2,13 +2,25 @@
 
 @layer base {
   :root {
+    /* Brand Colors */
     --acceloka-blue: #1677ff;
     --acceloka-accent: #fa8c16;
+
+    /* Layout Colors */
     --acceloka-bg: #f8fafc;
     --acceloka-surface: #ffffff;
     --acceloka-text: #0f172a;
     --acceloka-muted: #64748b;
     --acceloka-border: #e2e8f0;
+    --acceloka-danger: #dc2626;
+
+    /* Component Specific: Hero */
+    --acceloka-hero-overlay: rgba(15, 23, 42, 0.6);
+    --acceloka-hero-subtext: #f1f5f9;
+
+    /* Component Specific: Feedback */
+    --acceloka-success: #166534;
+    --acceloka-success-bg: #f0fdf4;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -20,9 +32,16 @@
       --acceloka-text: #f8fafc;
       --acceloka-muted: #94a3b8;
       --acceloka-border: #334155;
+      --acceloka-danger: #ef4444;
+
+      /* Dark Mode Specifics */
+      --acceloka-hero-overlay: rgba(2, 6, 23, 0.8);
+      --acceloka-hero-subtext: #cbd5e1;
+
+      --acceloka-success: #4ade80;
+      --acceloka-success-bg: rgba(34, 197, 94, 0.1);
     }
   }
-
 
   @theme {
     --color-acceloka-blue: var(--acceloka-blue);
@@ -32,6 +51,13 @@
     --color-acceloka-text: var(--acceloka-text);
     --color-acceloka-muted: var(--acceloka-muted);
     --color-acceloka-border: var(--acceloka-border);
+
+    /* Utility tokens for specific components */
+    --color-acceloka-hero-sub: var(--acceloka-hero-subtext);
+    --color-acceloka-success: var(--acceloka-success);
+    --color-acceloka-success-bg: var(--acceloka-success-bg);
+
+    --color-acceloka-danger: var(--acceloka-danger);
   }
 
   body {
@@ -39,5 +65,10 @@
     color: var(--acceloka-text);
     margin: 0;
     font-family: 'Inter', system-ui, sans-serif;
+    @apply antialiased;
+  }
+
+  main {
+    padding: 0;
   }
 }
