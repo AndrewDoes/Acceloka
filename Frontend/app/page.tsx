@@ -8,14 +8,15 @@ import FilterBar from "./components/filterbar";
 import TicketGrid from "./components/ticketgrid";
 import { TicketData } from "./components/ticketcard";
 import BookingDrawer from "./components/bookingdrawer";
-import { Button, message, Modal, notification, Typography } from "antd";
+import { Button, Typography, App, ConfigProvider, theme } from "antd";
 import { CheckCircleOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import { useAuth } from "./context/AuthContext";
 
 const { Text } = Typography;
 
-export default function Home() {
-  const { isLoggedIn, isCheckingAuth } = useAuth();
+function HomeContent() {
+  const { modal, message, notification } = App.useApp();
+  const { isLoggedIn } = useAuth();
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketCount, setTicketCount] = useState(0);
@@ -25,6 +26,7 @@ export default function Home() {
   const [bookings, setBookings] = useState<TicketData[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
+  //filters
   const [filters, setFilters] = useState<TicketFilters>({
     categoryName: "",
     ticketCode: "",
@@ -36,6 +38,7 @@ export default function Home() {
     orderState: "asc",
   });
 
+  // pricing
   const totalPrice = useMemo(() =>
     bookings.reduce((sum, t) => {
       const price = t.Price ?? t.price ?? 0;
@@ -44,33 +47,62 @@ export default function Home() {
     }, 0),
     [bookings]);
 
+
+  // add ticket
   const handleAddTicket = (ticket: TicketData) => {
     if (!isLoggedIn) {
       notification.info({
-        message: 'Login Required',
+        title: 'Login Required',
         description: 'You need to be logged in to add tickets.',
-        btn: <Button type="primary" size="small" href="/login">Login Now</Button>
+        actions: <Button
+          type="text"
+          size="medium"
+          href="/login"
+          className="bg-acceloka-blue! border border-acceloka-border!"
+          onMouseEnter={(e) => {
+            e.currentTarget.style.scale = '1.05';
+            e.currentTarget.style.border = '1px solid var(--acceloka-text)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.scale = '1';
+            e.currentTarget.style.border = '1px solid var(--acceloka-border)';
+          }}
+        >Login Now</Button>
+      });
+      return;
+    }
+    const ticketId = ticket.ticketCode || ticket.TicketCode;
+    const existingItem = bookings.find(item => (item.ticketCode || item.TicketCode) === ticketId);
+    const currentQty = existingItem ? (existingItem.quantity || 1) : 0;
+    const maxQuota = ticket.quota ?? 999;
+
+    if (currentQty + 1 > maxQuota) {
+      message.warning({
+        content: `Maximum available for ${ticket.ticketName || ticket.TicketName} is ${maxQuota} units.`,
+        className: "text-acceloka-text!"
       });
       return;
     }
 
     setBookings(prev => {
-      const ticketId = ticket.ticketCode || ticket.TicketCode;
-      const existingIndex = prev.findIndex(item => (item.ticketCode || item.TicketCode) === ticketId);
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex] = { ...updated[existingIndex], quantity: (updated[existingIndex].quantity || 1) + 1 };
-        return updated;
+      if (existingItem) {
+        return prev.map(item =>
+          (item.ticketCode || item.TicketCode) === ticketId
+            ? { ...item, quantity: currentQty + 1 }
+            : item
+        );
       }
       return [...prev, { ...ticket, quantity: 1 }];
     });
+
     message.success(`${ticket.ticketName || ticket.TicketName} added to selection.`);
   };
 
   const handleCheckout = () => {
-    Modal.confirm({
+    modal.confirm({
       title: <Text strong className="text-acceloka-text">Complete Your Booking</Text>,
       icon: <CheckCircleOutlined className="text-acceloka-blue" />,
+      centered: true,
       content: (
         <div className="mt-4">
           <Text className="text-acceloka-muted">Finalizing booking for <b>{bookings.length}</b> ticket types.</Text>
@@ -83,8 +115,8 @@ export default function Home() {
         </div>
       ),
       okText: 'Confirm & Checkout',
-      okButtonProps: { className: "bg-acceloka-blue h-10 rounded-lg border-none" },
-      cancelButtonProps: { className: "h-10 rounded-lg border-acceloka-border text-acceloka-muted" },
+      okButtonProps: { className: "bg-acceloka-blue h-10 rounded-lg border-none font-bold" },
+      cancelButtonProps: { className: "h-10 rounded-lg border-acceloka-border text-acceloka-muted font-bold" },
       async onOk() {
         const hide = message.loading('Processing booking...', 0);
         try {
@@ -97,9 +129,9 @@ export default function Home() {
           const result = await bookingService.bookTickets(payload);
           setBookings([]);
           setIsDrawerOpen(false);
-          notification.success({ message: 'Booking Successful', description: result.message });
+          notification.success({ title: 'Booking Successful', description: result.message });
         } catch (err: any) {
-          notification.error({ message: 'Booking Failed', description: err.message });
+          notification.error({ title: 'Booking Failed', description: err.message });
         } finally {
           hide();
           setSearchTrigger(prev => prev + 1);
@@ -108,6 +140,7 @@ export default function Home() {
     });
   };
 
+  // fetching all tickets
   useEffect(() => {
     const fetchTickets = async () => {
       setIsLoading(true);
@@ -125,6 +158,7 @@ export default function Home() {
     };
     fetchTickets();
   }, [currentPage, searchTrigger]);
+
 
   return (
     <div className="min-h-screen bg-acceloka-bg">
@@ -149,13 +183,25 @@ export default function Home() {
         />
       </main>
 
-      {/* DRAWER COMPONENT */}
       <BookingDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         bookings={bookings}
         totalPrice={totalPrice}
         onUpdateQuantity={(code, delta) => {
+          const item = bookings.find(i => (i.ticketCode || i.TicketCode) === code);
+          if (!item) return;
+
+          const newQty = (item.quantity || 1) + delta;
+          const maxQuota = item.quota ?? 999;
+          if (delta > 0 && newQty > maxQuota) {
+            message.warning({
+              content: `Maximum available for this ticket is ${maxQuota}.`,
+              className: "text-acceloka-text!"
+            });
+            return;
+          }
+
           setBookings(prev => prev.map(item => {
             const currentCode = item.ticketCode || item.TicketCode;
             if (currentCode === code) {
@@ -165,19 +211,21 @@ export default function Home() {
             return item;
           }));
         }}
-        onRemoveTicket={(code) => setBookings(prev => prev.filter(i => (i.ticketCode || i.TicketCode) !== code))}
+        onRemoveTicket={(code) => {
+          setBookings(prev => prev.filter(i => (i.ticketCode || i.TicketCode) !== code));
+          message.info("Ticket removed.");
+        }}
         onClearAll={() => setBookings([])}
         onCheckout={handleCheckout}
       />
 
-      {/* Floating Action Button */}
       {bookings.length > 0 && !isDrawerOpen && (
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="fixed bottom-10 right-6 md:right-10 z-100 flex items-center gap-4 bg-acceloka-blue hover:scale-105 active:scale-95 text-white font-bold py-4 px-6 md:px-8 rounded-2xl shadow-2xl transition-all border-none"
+          className="fixed bottom-10 right-6 md:right-10 z-100 flex items-center gap-4 bg-acceloka-blue hover:scale-105 active:scale-95 text-white font-bold py-4 px-6 md:px-8 rounded-2xl shadow-2xl transition-all border-none cursor-pointer"
           style={{ backgroundColor: 'var(--acceloka-blue)' }}
         >
-          <div className="bg-white text-acceloka-blue rounded-full w-7 h-7 flex items-center justify-center text-sm">
+          <div className="bg-white text-acceloka-blue rounded-full w-7 h-7 flex items-center justify-center text-sm font-black">
             {bookings.reduce((sum, b) => sum + (b.quantity || 1), 0)}
           </div>
           <span className="text-white tracking-wide flex items-center gap-2">
@@ -186,5 +234,46 @@ export default function Home() {
         </button>
       )}
     </div>
+  );
+}
+
+/**
+ * MAIN EXPORT (The Wrapper)
+ */
+export default function Home() {
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: 'var(--acceloka-blue)',
+          colorBgContainer: 'var(--acceloka-surface)',
+          colorBgLayout: 'var(--acceloka-bg)',
+          colorText: 'var(--acceloka-text)',
+          colorTextDescription: 'var(--acceloka-muted)',
+          borderRadius: 12,
+          fontFamily: 'Inter, sans-serif'
+        },
+        components: {
+          Notification: {
+            colorBgElevated: 'var(--acceloka-surface-hover)',
+            colorText: 'var(--acceloka-text)',
+            colorTextHeading: 'var(--acceloka-text)',
+          },
+          Message: {
+            colorBgElevated: 'var(--acceloka-surface-hover)',
+            colorText: 'var(--acceloka-text)',
+          },
+          Modal: {
+            colorBgElevated: 'var(--acceloka-surface-hover)',
+            colorBgMask: 'rgba(0, 0, 0, 0.45)',
+          }
+        }
+      }}
+    >
+      <App>
+        <HomeContent />
+      </App>
+    </ConfigProvider>
   );
 }

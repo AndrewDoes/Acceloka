@@ -9,6 +9,7 @@
     /* Layout Colors */
     --acceloka-bg: #f8fafc;
     --acceloka-surface: #ffffff;
+    --acceloka-surface-hover: #ffffff;
     --acceloka-text: #0f172a;
     --acceloka-muted: #64748b;
     --acceloka-border: #e2e8f0;
@@ -29,6 +30,7 @@
       --acceloka-accent: #f97316;
       --acceloka-bg: #0f172a;
       --acceloka-surface: #1e293b;
+      --acceloka-surface-hover: #2a3a53;
       --acceloka-text: #f8fafc;
       --acceloka-muted: #94a3b8;
       --acceloka-border: #334155;
@@ -48,6 +50,7 @@
     --color-acceloka-accent: var(--acceloka-accent);
     --color-acceloka-bg: var(--acceloka-bg);
     --color-acceloka-surface: var(--acceloka-surface);
+    --color-acceloka-surface-hover: var(--acceloka-surface-hover);
     --color-acceloka-text: var(--acceloka-text);
     --color-acceloka-muted: var(--acceloka-muted);
     --color-acceloka-border: var(--acceloka-border);

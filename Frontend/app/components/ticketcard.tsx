@@ -75,7 +75,6 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onSelect, onAdd }) => {
 
     /**
      * CATEGORIZED IMAGE MAPPING
-     * This logic lives here because it is a property of the individual card.
      */
     const getCategoryImage = (cat: string) => {
         const category = cat?.toLowerCase();
@@ -97,13 +96,15 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onSelect, onAdd }) => {
             onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
                 e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.backgroundColor = 'var(--acceloka-surface-hover)';
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
                 e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.backgroundColor = 'var(--acceloka-surface)';
             }}
             onClick={() => onSelect(ticket)}
-            style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '16px', backgroundColor: 'var(--acceloka-card-bg)', border: '1px solid var(--acceloka-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', transition: 'all 0.3s ease' }}
+            style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '16px', backgroundColor: 'var(--acceloka-surface)', border: '1px solid var(--acceloka-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', transition: 'all 0.3s ease' }}
             styles={{ body: { flexGrow: 1, display: 'flex', flexDirection: 'column', padding: '24px', } }}
             cover={
                 <div style={{ height: 160, position: 'relative', overflow: 'hidden' }}>
@@ -118,6 +119,8 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onSelect, onAdd }) => {
                         }}
                         className="group-hover:scale-110"
                     />
+
+                    {/* card header */}
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 40%)' }} />
                     <div style={{ position: 'absolute', top: 16, left: 16 }}>
                         <Tag color={getCategoryColor(categoryName)} style={{ fontWeight: 'bold', margin: 0, padding: '2px 10px', borderRadius: '12px', border: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
@@ -133,6 +136,8 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onSelect, onAdd }) => {
                 </div>
             }
         >
+
+            {/* information space */}
             <Space orientation="vertical" size="middle" style={{ width: '100%', flexGrow: 1 }}>
                 <Text type="secondary" style={{ fontSize: 11, fontWeight: 'bold', letterSpacing: 1, color: 'var(--acceloka-text)' }}>
                     <TagOutlined style={{ marginRight: 6 }} /> {ticketCode}
@@ -158,13 +163,26 @@ const TicketCard: React.FC<TicketCardProps> = ({ ticket, onSelect, onAdd }) => {
                     <Text type="secondary" style={{ fontSize: 10, fontWeight: 'bold', color: 'var(--acceloka-muted)' }}>PRICE</Text>
                     <Title level={3} style={{ margin: 0, color: 'var(--acceloka-blue)', fontSize: '1.3rem' }}>{formatPrice(price)}</Title>
                 </div>
+
+                {/* add button */}
                 <Button
-                    type="primary"
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                        e.currentTarget.style.border = '1px solid var(--acceloka-text)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                        e.currentTarget.style.border = '1px solid var(--acceloka-border)';
+                    }}
+                    type="default"
                     icon={isSoldOut ? <ExclamationCircleOutlined /> : <PlusOutlined />}
                     disabled={isSoldOut}
                     onClick={(e) => { e.stopPropagation(); onAdd(ticket); }}
                     shape="circle"
                     size="large"
+                    style={{ color: 'var(--acceloka-surface)', backgroundColor: 'var(--acceloka-blue)', border: '1px solid var(--acceloka-border)' }}
                     suppressHydrationWarning={true}
                 />
             </div>

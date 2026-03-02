@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import TicketCard, { TicketData } from "./ticketcard";
-import { Button, Empty, Pagination, Spin } from "antd";
+import { Button, ConfigProvider, Empty, Pagination, Spin, theme } from "antd";
 import Text from "antd/es/typography/Text";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, ArrowRightOutlined } from "@ant-design/icons";
 
 interface TicketGridProps {
     tickets: TicketData[];
@@ -59,7 +59,7 @@ export default function TicketGrid({
     // Empty State
     if (displayTickets.length === 0) {
         return (
-            <div className="py-20 bg-white text-center rounded-xl border border-dashed border-slate-200">
+            <div className="py-20 bg-acceloka-surface text-center rounded-xl border border-dashed border-acceloka-border">
                 <Empty description={`No items found on Page ${currentPage}`} />
                 {currentPage > 1 && (
                     <Button onClick={() => onPageChange(1)} className="mt-4">
@@ -79,8 +79,8 @@ export default function TicketGrid({
                 </Text>
             </div>
 
-            {/* Grid Layout - 5 columns for desktop as per your previous code */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {/* Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 bg-acceloka-surface">
                 {displayTickets.map((ticket: TicketData, idx: number) => {
                     const key = ticket.ticketCode || ticket.TicketCode || `t-${currentPage}-${idx}`;
                     return (
@@ -97,19 +97,41 @@ export default function TicketGrid({
 
             {/* Pagination Controls */}
             {finalTotalCount > pageSize && (
-                <div className="flex flex-col items-center gap-4 py-8 border-t border-slate-100 mt-8">
-                    <Pagination
-                        onChange={onPageChange}
-                        current={currentPage}
-                        total={finalTotalCount}
-                        pageSize={pageSize}
-                        showSizeChanger={false}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-slate-100"
-                    />
-                    <Text type="secondary" className="text-xs">
-                        Page {currentPage} of {Math.ceil(finalTotalCount / pageSize)}
-                    </Text>
-                </div>
+                <ConfigProvider
+                    theme={{
+                        algorithm: theme.defaultAlgorithm,
+                        token: {
+                            colorPrimary: 'var(--acceloka-blue)',
+                            colorBgContainer: 'var(--acceloka-surface)',
+                            colorText: 'var(--acceloka-text)',
+                            colorBorder: 'var(--acceloka-border)',
+                        },
+                        components: {
+                            Pagination: {
+                                itemActiveBg: 'var(--acceloka-blue)',
+                                itemBg: 'var(--acceloka-surface)',
+                                colorText: 'var(--acceloka-text)',
+                                colorTextDisabled: 'var(--acceloka-muted)',
+                            }
+                        }
+                    }}
+                >
+                    <div className="flex flex-col items-center gap-4 py-8 border-t border-acceloka-border mt-8">
+                        <Pagination
+                            onChange={onPageChange}
+                            nextIcon={<ArrowRightOutlined className="text-acceloka-text!" />}
+                            prevIcon={<ArrowLeftOutlined className="text-acceloka-text!" />}
+                            current={currentPage}
+                            total={finalTotalCount}
+                            pageSize={pageSize}
+                            showSizeChanger={false}
+                            className="bg-acceloka-surface! p-4 rounded-xl shadow-sm border border-acceloka-border"
+                        />
+                        <Text type="secondary" className="text-xs text-acceloka-text!">
+                            Page {currentPage} of {Math.ceil(finalTotalCount / pageSize)}
+                        </Text>
+                    </div>
+                </ConfigProvider>
             )}
         </div>
     );

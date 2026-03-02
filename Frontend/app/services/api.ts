@@ -66,6 +66,7 @@ export const bookingService = {
 }
 
 export const authService = {
+    // GET Check Authentication Status
     checkAuthStatus: () => {
         return apiRequest<any>('api/v1/auth/status', {
             method: 'GET',
@@ -73,6 +74,7 @@ export const authService = {
         });
     },
 
+    // POST Logout
     logout: () => {
         return apiRequest<any>('api/v1/auth/logout', {
             method: 'POST',

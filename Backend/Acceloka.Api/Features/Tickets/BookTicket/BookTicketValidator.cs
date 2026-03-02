@@ -2,6 +2,7 @@
 using Acceloka.Api.Infrastructure.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Acceloka.Api.Features.Tickets.BookTicket
 {
@@ -39,8 +40,8 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
                 if (duplicateCodes.Any())
                 {
                     var error = $"Duplicate ticket codes detected: {string.Join(", ", duplicateCodes)}";
-                    _logger.LogInformation(error); 
-                    context.AddFailure("Tickets", "Duplicate ticket codes are not allowed in a single booking.");
+                    _logger.LogInformation(error);
+                    throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
                 }
             });
 
@@ -50,7 +51,7 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
                 {
                     var error = $"Invalid quantity ({ticket.Quantity}) for ticket {ticket.TicketCode}";
                     _logger.LogInformation(error);
-                    context.AddFailure("Quantity", "Harus memesan 1 tiket atau lebih");
+                    throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
                 }
             });
 
@@ -78,19 +79,20 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
                     var error = $"Quota tiket {ticket.KodeTiket} habis";
                     _logger.LogInformation(error);
                     context.AddFailure("TicketCode", error);
+                    
                 }
                 else if (req.Quantity > remainingQuota)
                 {
                     var error = $"Quantity ({req.Quantity}) melebihi sisa quota untuk {ticket.KodeTiket} (Sisa Quota = {remainingQuota})";
                     _logger.LogInformation(error);
-                    context.AddFailure("Quantity", error);
+                    throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
                 }
 
                 if (ticket.EventDate <= bookingDate)
                 {
                     var error = $"Tanggal event tiket {ticket.KodeTiket} sudah lewat atau tidak valid ({ticket.EventDate})";
                     _logger.LogInformation(error);
-                    context.AddFailure("TicketCode", error);
+                    throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
                 }
             });
 
@@ -100,9 +102,9 @@ namespace Acceloka.Api.Features.Tickets.BookTicket
 
                 if (string.IsNullOrEmpty(userIdClaim))
                 {
-                    var ErrorMessage = "User session is missing. Please log in again.";
-                    _logger.LogInformation(ErrorMessage);
-                    context.AddFailure("Auth", ErrorMessage);
+                    var error = "User session is missing. Please log in again.";
+                    _logger.LogInformation(error);
+                    throw new BadHttpRequestException(error, StatusCodes.Status400BadRequest);
                 }
             });
         }
