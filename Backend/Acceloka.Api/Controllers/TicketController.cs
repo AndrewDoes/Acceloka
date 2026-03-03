@@ -1,4 +1,5 @@
-﻿using Acceloka.Api.Features.Tickets.BookTicket.Requests;
+﻿using Acceloka.Api.Features.Tickets.AddTicket.Requests;
+using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Features.Tickets.EditBookedTicket.Requests;
 using Acceloka.Api.Features.Tickets.GetAllBookings.Requests;
 using Acceloka.Api.Features.Tickets.GetAvailableTickets.Requests;
@@ -26,6 +27,14 @@ namespace Acceloka.Api.Controllers
         public async Task<IActionResult> GetAvailabletickets([FromQuery] GetAvailableTicketsQuery query)
         {
             var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost("add-ticket")]
+        public async Task<IActionResult> AddTicket([FromBody] AddTicketCommand command)
+        {
+            var result = await _mediator.Send(command);
             return Ok(result);
         }
 

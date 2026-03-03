@@ -25,6 +25,21 @@ async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T
 }
 
 export const bookingService = {
+    // POST Add Ticket
+    addTicket: (data: {
+        ticketName: string;
+        ticketCode: string;
+        categoryName: string;
+        eventDate: string;
+        price: number;
+        quota: number;
+    }) => {
+        return apiRequest<any>('api/v1/add-ticket', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
     // GET Available Tickets with searching and pagination
     getAvailableTickets: (params: Record<string, any>) => {
         const query = new URLSearchParams(params).toString();

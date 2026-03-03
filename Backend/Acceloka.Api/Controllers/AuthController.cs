@@ -33,7 +33,8 @@ namespace Acceloka.Api.Controllers
                     IsAuthenticated = true,
                     Email = User.FindFirst(ClaimTypes.Email)?.Value,
                     Name = User.FindFirst(ClaimTypes.Name)?.Value,
-                    InternalUserId = User.FindFirst("InternalUserId")?.Value
+                    InternalUserId = User.FindFirst("InternalUserId")?.Value,
+                    Role = User.FindFirst(ClaimTypes.Role)?.Value
                 });
             }
 

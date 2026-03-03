@@ -1,23 +1,26 @@
-'use client';
-
+'use client'
+import { App, Button, ConfigProvider, Spin, theme } from "antd";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { useEffect, useMemo, useState } from "react";
+import { TicketData } from "./components/ticketcard";
 import { Ticket, TicketFilters } from "./types/Ticket";
+import { CheckCircleOutlined, PlusCircleOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import Text from "antd/es/typography/Text";
 import { bookingService } from "./services/api";
 import HeroSection from "./components/hero";
 import FilterBar from "./components/filterbar";
+import Title from "antd/es/typography/Title";
 import TicketGrid from "./components/ticketgrid";
-import { TicketData } from "./components/ticketcard";
 import BookingDrawer from "./components/bookingdrawer";
-import { Button, Typography, App, ConfigProvider, theme } from "antd";
-import { CheckCircleOutlined, ShoppingCartOutlined } from "@ant-design/icons";
-import { useAuth } from "./context/AuthContext";
+import AddTicketModal from "./components/addticketmodal";
 
-const { Text } = Typography;
 
 function HomeContent() {
   const { modal, message, notification } = App.useApp();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, role } = useAuth();
+  const isAdmin = role === 'Admin';
 
+  const [hasMounted, setHasMounted] = useState(false);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [ticketCount, setTicketCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,8 +28,10 @@ function HomeContent() {
   const [searchTrigger, setSearchTrigger] = useState(0);
   const [bookings, setBookings] = useState<TicketData[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
-  //filters
+  useEffect(() => { setHasMounted(true); }, []);
+
   const [filters, setFilters] = useState<TicketFilters>({
     categoryName: "",
     ticketCode: "",
@@ -38,7 +43,6 @@ function HomeContent() {
     orderState: "asc",
   });
 
-  // pricing
   const totalPrice = useMemo(() =>
     bookings.reduce((sum, t) => {
       const price = t.Price ?? t.price ?? 0;
@@ -48,26 +52,12 @@ function HomeContent() {
     [bookings]);
 
 
-  // add ticket
   const handleAddTicket = (ticket: TicketData) => {
     if (!isLoggedIn) {
       notification.info({
-        title: 'Login Required',
-        description: 'You need to be logged in to add tickets.',
-        actions: <Button
-          type="text"
-          size="medium"
-          href="/login"
-          className="bg-acceloka-blue! border border-acceloka-border!"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.scale = '1.05';
-            e.currentTarget.style.border = '1px solid var(--acceloka-text)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.scale = '1';
-            e.currentTarget.style.border = '1px solid var(--acceloka-border)';
-          }}
-        >Login Now</Button>
+        message: <span className="text-acceloka-text font-bold">Login Required</span>,
+        description: <span className="text-acceloka-muted">You need to be logged in to add tickets.</span>,
+        btn: <Button type="primary" size="small" href="/login" className="bg-acceloka-blue border-none">Login Now</Button>
       });
       return;
     }
@@ -79,7 +69,6 @@ function HomeContent() {
     if (currentQty + 1 > maxQuota) {
       message.warning({
         content: `Maximum available for ${ticket.ticketName || ticket.TicketName} is ${maxQuota} units.`,
-        className: "text-acceloka-text!"
       });
       return;
     }
@@ -94,7 +83,6 @@ function HomeContent() {
       }
       return [...prev, { ...ticket, quantity: 1 }];
     });
-
     message.success(`${ticket.ticketName || ticket.TicketName} added to selection.`);
   };
 
@@ -118,7 +106,7 @@ function HomeContent() {
       okButtonProps: { className: "bg-acceloka-blue h-10 rounded-lg border-none font-bold" },
       cancelButtonProps: { className: "h-10 rounded-lg border-acceloka-border text-acceloka-muted font-bold" },
       async onOk() {
-        const hide = message.loading('Processing booking...', 0);
+        const hide = message.loading({ content: 'Processing booking...' }, 0);
         try {
           const payload = {
             tickets: bookings.map(b => ({
@@ -140,13 +128,13 @@ function HomeContent() {
     });
   };
 
-  // fetching all tickets
   useEffect(() => {
+    if (!hasMounted) return;
     const fetchTickets = async () => {
       setIsLoading(true);
       try {
         const response = await bookingService.getAvailableTickets({ ...filters, page: currentPage });
-        const data = Array.isArray(response) ? response : response.tickets;
+        const data = Array.isArray(response) ? response : (response.tickets || []);
         const count = response.length || response.totalTickets || 0;
         setTickets(data);
         setTicketCount(count);
@@ -157,72 +145,83 @@ function HomeContent() {
       }
     };
     fetchTickets();
-  }, [currentPage, searchTrigger]);
+  }, [currentPage, searchTrigger, hasMounted]);
 
+  if (!hasMounted) return <div className="min-h-screen bg-acceloka-bg flex items-center justify-center"><Spin size="large" /></div>;
 
   return (
-    <div className="min-h-screen bg-acceloka-bg">
+    <div className="min-h-screen bg-acceloka-bg!">
       <HeroSection />
 
       <FilterBar
         filters={filters}
-        updateFilter={(key, value) => setFilters({ ...filters, [key]: value })}
+        updateFilter={(key, value) => setFilters({ ...filters, [key as keyof TicketFilters]: value })}
         onSearch={() => { setCurrentPage(1); setSearchTrigger(prev => prev + 1); }}
       />
 
-      <main className="px-6 xl:px-20 mx-auto py-8 w-full">
+      <main className="xl:px-20 mx-auto py-8 w-full px-6 md:px-60">
+        <div className="flex justify-between items-center mb-10 px-2">
+          <div>
+            <Title level={2} className="m-0 text-acceloka-text! font-black">Upcoming Events</Title>
+            <Text className="text-acceloka-muted!">Discover and book tickets for the best events in town.</Text>
+          </div>
+
+          {isAdmin && (
+            <Button
+              type="primary"
+              icon={<PlusCircleOutlined />}
+              size="large"
+              className="h-12 rounded-xl! bg-acceloka-blue! border-none! font-bold! shadow-lg shadow-blue-500/20"
+              onClick={() => setIsAdminModalOpen(true)}
+            >
+              Add Ticket
+            </Button>
+          )}
+        </div>
+
         <TicketGrid
           tickets={tickets}
           isLoading={isLoading}
-          onSelectTicket={handleAddTicket}
           onAddTicket={handleAddTicket}
+          onSelectTicket={handleAddTicket}
           totalTickets={ticketCount}
           currentPage={currentPage}
-          pageSize={10}
           onPageChange={setCurrentPage}
         />
       </main>
 
+      <AddTicketModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onRefresh={() => setSearchTrigger(prev => prev + 1)}
+      />
+
       <BookingDrawer
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
+        onClearAll={() => setBookings([])}
         bookings={bookings}
         totalPrice={totalPrice}
-        onUpdateQuantity={(code, delta) => {
-          const item = bookings.find(i => (i.ticketCode || i.TicketCode) === code);
-          if (!item) return;
-
-          const newQty = (item.quantity || 1) + delta;
-          const maxQuota = item.quota ?? 999;
-          if (delta > 0 && newQty > maxQuota) {
-            message.warning({
-              content: `Maximum available for this ticket is ${maxQuota}.`,
-              className: "text-acceloka-text!"
-            });
-            return;
-          }
-
+        onUpdateQuantity={(code: string, delta: number) => {
           setBookings(prev => prev.map(item => {
-            const currentCode = item.ticketCode || item.TicketCode;
-            if (currentCode === code) {
+            if ((item.ticketCode || item.TicketCode) === code) {
               const newQty = (item.quantity || 1) + delta;
               return newQty > 0 ? { ...item, quantity: newQty } : item;
             }
             return item;
           }));
         }}
-        onRemoveTicket={(code) => {
+        onRemoveTicket={(code: string) => {
           setBookings(prev => prev.filter(i => (i.ticketCode || i.TicketCode) !== code));
           message.info("Ticket removed.");
         }}
-        onClearAll={() => setBookings([])}
         onCheckout={handleCheckout}
       />
 
       {bookings.length > 0 && !isDrawerOpen && (
         <button
           onClick={() => setIsDrawerOpen(true)}
-          className="fixed bottom-10 right-6 md:right-10 z-100 flex items-center gap-4 bg-acceloka-blue hover:scale-105 active:scale-95 text-white font-bold py-4 px-6 md:px-8 rounded-2xl shadow-2xl transition-all border-none cursor-pointer"
+          className="fixed bottom-10 right-6 md:right-10 z-[100] flex items-center gap-4 bg-acceloka-blue hover:scale-105 active:scale-95 text-white font-bold py-4 px-6 md:px-8 rounded-2xl shadow-2xl transition-all border-none cursor-pointer"
           style={{ backgroundColor: 'var(--acceloka-blue)' }}
         >
           <div className="bg-white text-acceloka-blue rounded-full w-7 h-7 flex items-center justify-center text-sm font-black">
@@ -237,42 +236,59 @@ function HomeContent() {
   );
 }
 
-/**
- * MAIN EXPORT (The Wrapper)
- */
+// --- 7. THEME PROVIDER & DYNAMIC LOGIC ---
 export default function Home() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(mediaQuery.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.defaultAlgorithm,
+        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: 'var(--acceloka-blue)',
           colorBgContainer: 'var(--acceloka-surface)',
           colorBgLayout: 'var(--acceloka-bg)',
           colorText: 'var(--acceloka-text)',
           colorTextDescription: 'var(--acceloka-muted)',
+          colorTextPlaceholder: 'rgba(148, 163, 184, 0.75)',
           borderRadius: 12,
           fontFamily: 'Inter, sans-serif'
         },
         components: {
-          Notification: {
-            colorBgElevated: 'var(--acceloka-surface-hover)',
-            colorText: 'var(--acceloka-text)',
-            colorTextHeading: 'var(--acceloka-text)',
+          Input: {
+            colorBgContainer: 'var(--acceloka-bg)',
+            colorBorder: 'var(--acceloka-border)',
+            colorTextPlaceholder: 'rgba(148, 163, 184, 0.75)',
           },
-          Message: {
-            colorBgElevated: 'var(--acceloka-surface-hover)',
-            colorText: 'var(--acceloka-text)',
+          Select: {
+            colorBgContainer: 'var(--acceloka-bg)',
+            colorBorder: 'var(--acceloka-border)',
+            colorTextPlaceholder: 'rgba(148, 163, 184, 0.75)',
+          },
+          DatePicker: {
+            colorBgContainer: 'var(--acceloka-bg)',
+            colorBorder: 'var(--acceloka-border)',
+            colorTextPlaceholder: 'rgba(148, 163, 184, 0.75)',
           },
           Modal: {
             colorBgElevated: 'var(--acceloka-surface-hover)',
-            colorBgMask: 'rgba(0, 0, 0, 0.45)',
+            colorBgMask: 'rgba(0, 0, 0, 0.65)',
           }
         }
       }}
     >
-      <App>
-        <HomeContent />
+      <App className="bg-acceloka-bg!">
+        <AuthProvider>
+          <HomeContent />
+        </AuthProvider>
       </App>
     </ConfigProvider>
   );

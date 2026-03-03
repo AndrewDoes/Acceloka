@@ -36,7 +36,6 @@ namespace Acceloka.Api.Features.Tickets.GetBookedTicketDetail
                 .Where(d => d.BookedTicketId == request.BookedTicketId && d.BookedTicket.UserId == userId)
                 .ToListAsync(cancellationToken);
 
-            // 3. Group the retrieved records by Category Name as per the response DTO
             return details
                 .GroupBy(d => d.Ticket.Category.Name)
                 .Select(g => new GetBookedTicketDetailResponse

@@ -80,7 +80,7 @@ export default function TicketGrid({
             </div>
 
             {/* Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 bg-acceloka-surface">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 bg-acceloka-bg">
                 {displayTickets.map((ticket: TicketData, idx: number) => {
                     const key = ticket.ticketCode || ticket.TicketCode || `t-${currentPage}-${idx}`;
                     return (
@@ -108,10 +108,11 @@ export default function TicketGrid({
                         },
                         components: {
                             Pagination: {
-                                itemActiveBg: 'var(--acceloka-blue)',
+                                itemActiveBg: 'var(--acceloka-surface)',
                                 itemBg: 'var(--acceloka-surface)',
+                                colorTextBase: 'var(--acceloka-text)',
                                 colorText: 'var(--acceloka-text)',
-                                colorTextDisabled: 'var(--acceloka-muted)',
+                                colorPrimary: 'var(--acceloka-text)'
                             }
                         }
                     }}

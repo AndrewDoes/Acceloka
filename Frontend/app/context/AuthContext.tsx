@@ -7,6 +7,7 @@ interface AuthContextType {
     isLoggedIn: boolean;
     userName: string;
     userEmail: string;
+    role: string; // Added role property
     isCheckingAuth: boolean;
     checkStatus: () => Promise<void>;
     logout: () => Promise<void>;
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userName, setUserName] = useState("");
     const [userEmail, setUserEmail] = useState("");
+    const [role, setRole] = useState(""); // Added role state
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
     const checkStatus = async () => {
@@ -27,20 +29,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsLoggedIn(true);
                 setUserName(data.name || data.email?.split('@')[0] || "User");
                 setUserEmail(data.email || "");
+                setRole(data.role || "User"); // Extracting role from backend
             } else {
                 setIsLoggedIn(false);
+                setRole("");
             }
         } catch (error) {
             setIsLoggedIn(false);
+            setRole("");
         } finally {
             setIsCheckingAuth(false);
         }
     }
 
     const logout = async () => {
-        await authService.logout();
-        setIsLoggedIn(false);
-        setUserName("");
+        try {
+            await authService.logout();
+        } finally {
+            setIsLoggedIn(false);
+            setUserName("");
+            setUserEmail("");
+            setRole("");
+        }
     }
 
     useEffect(() => {
@@ -48,7 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ isLoggedIn, userName, userEmail, isCheckingAuth, checkStatus, logout }}>
+        <AuthContext.Provider value={{
+            isLoggedIn,
+            userName,
+            userEmail,
+            role,
+            isCheckingAuth,
+            checkStatus,
+            logout
+        }}>
             {children}
         </AuthContext.Provider>
     )

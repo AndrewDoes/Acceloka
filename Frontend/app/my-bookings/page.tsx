@@ -370,9 +370,11 @@ export default function MyBookingsPage() {
                     },
 
                     Pagination: {
-                        itemActiveBg: 'var(--acceloka-blue)',
+                        itemActiveBg: 'var(--acceloka-surface)',
                         itemBg: 'var(--acceloka-surface)',
+                        colorTextBase: 'var(--acceloka-text)',
                         colorText: 'var(--acceloka-text)',
+                        colorPrimary: 'var(--acceloka-text)'
                     },
                     Modal: {
                         contentBg: 'var(--acceloka-surface)',

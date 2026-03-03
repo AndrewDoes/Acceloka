@@ -1,5 +1,6 @@
 using Acceloka.Api.Common;
 using Acceloka.Api.Domains.Entities;
+using Acceloka.Api.Features.Tickets.AddTicket.Requests;
 using Acceloka.Api.Features.Tickets.BookTicket.Requests;
 using Acceloka.Api.Infrastructure.Persistence;
 using FluentValidation;
@@ -32,13 +33,17 @@ builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AccelokaDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 string[] allowedOrigins = {
     "http://localhost:3000",
-    "http://192.168.56.1:3000" // Add this!
+    "http://192.168.56.1:3000",
+    //Add any port here to configure with the front end in the Next.js npm run dev
 };
 
 
 //mediatR
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(BookTicketCommand).Assembly));
+builder.Services.AddMediatR(cfg => {
+    cfg.RegisterServicesFromAssembly(typeof(AddTicketCommand).Assembly);
+});
 
 //FluentValidation
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
@@ -83,10 +88,13 @@ builder.Services.AddAuthentication(options =>
             await db.SaveChangesAsync();
         }
 
-        var claims = new List<Claim> { new Claim("InternalUserId", user.Id.ToString()) };
-        context.Principal?.AddIdentity(new ClaimsIdentity(claims));
-
-
+        var identity = context.Principal?.Identity as ClaimsIdentity;
+        if (identity != null)
+        {
+            identity.AddClaim(new Claim("InternalUserId", user.Id.ToString()));
+            var roleValue = !string.IsNullOrEmpty(user.Role) ? user.Role : "User";
+            identity.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+        }
     };
 });
 
@@ -94,7 +102,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
-    serverOptions.ListenAnyIP(5225); // Port for the backend
+    serverOptions.ListenAnyIP(5225);
 });
 
 var app = builder.Build();
@@ -142,11 +150,10 @@ app.UseSerilogRequestLogging(options =>
 app.UseRouting();
 app.UseCors();
 
-app.UseAuthentication(); // Processes the login
+app.UseAuthentication();
 app.UseAuthorization();
 
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
